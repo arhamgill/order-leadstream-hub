@@ -709,7 +709,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                 const msg = (v as { message?: string })?.message;
                 if (msg) rhfMessages[k] = msg;
               });
-              setExtraErrors(prev => ({ ...prev, ...rhfMessages }));
+              setExtraErrors(rhfMessages);
               const firstKey = Object.keys(fieldErrors)[0];
               const el =
                 document.querySelector<HTMLElement>(`[name="${firstKey}"]`) ??
@@ -800,7 +800,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                     <StatesMultiSelect id="fe_cb_ov_states" value={feCbOvStates} onChange={setFeCbOvStates} error={extraErrors.fe_cb_ov_states} />
                     <FieldError msg={extraErrors.fe_cb_ov_states} /></div>
                   <div><Label htmlFor="fe_cb_ov_startDate" required>Preferred Start Date</Label>
-                    {dateInput('fe_cb_ov_startDate', 'input-fe-cb-ov-start', 'fe_cb_ov_startDate', true)}</div>
+                    {dateInput('fe_cb_ov_startDate', 'input-fe-cb-ov-start', 'fe_cb_ov_startDate', false)}</div>
                   <div><Label htmlFor="fe_cb_ov_agencyMention" required>Agency Name to Mention</Label>
                     <input id="fe_cb_ov_agencyMention" placeholder="Override agency name" className={errors.fe_cb_ov_agencyMention ? errorInputClass : inputClass}
                       {...register('fe_cb_ov_agencyMention', { required: feCbOverride ? 'Required.' : false })} />
@@ -808,8 +808,8 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                 </>}>
                 <div><Label htmlFor="fe_cb_package">Package</Label>
                   <div id="fe_cb_package" data-testid="display-fe-cb-package" className="rounded-[10px] border border-[#243e62] bg-[#080f1c] px-3.5 py-2.5 text-sm text-[#7a95ba]">{getPackageLabel(cart, 'Final Expense', 'Callback Leads')}</div></div>
-                <div><Label htmlFor="fe_cb_deliveryDate" required>Preferred Delivery Date</Label>
-                  {dateInput('fe_cb_deliveryDate', 'input-fe-cb-delivery', 'fe_cb_deliveryDate', true)}</div>
+                <div><Label htmlFor="fe_cb_deliveryDate">Preferred Delivery Date</Label>
+                  {dateInput('fe_cb_deliveryDate', 'input-fe-cb-delivery', 'fe_cb_deliveryDate', false)}</div>
                 <div><Label htmlFor="fe_cb_format" required>Delivery Format</Label>
                   <RadioGroup name="fe_cb_format" options={['CSV','PDF']} register={register as (n: string, o?: object) => object} error={errors.fe_cb_format?.message} /></div>
               </ProductSectionCard>
@@ -824,7 +824,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                     <StatesMultiSelect id="fe_lt_ov_states" value={feLtOvStates} onChange={setFeLtOvStates} error={extraErrors.fe_lt_ov_states} />
                     <FieldError msg={extraErrors.fe_lt_ov_states} /></div>
                   <div><Label htmlFor="fe_lt_ov_startDate" required>Preferred Start Date</Label>
-                    {dateInput('fe_lt_ov_startDate', 'input-fe-lt-ov-start', 'fe_lt_ov_startDate', true)}</div>
+                    {dateInput('fe_lt_ov_startDate', 'input-fe-lt-ov-start', 'fe_lt_ov_startDate', false)}</div>
                   <div><Label htmlFor="fe_lt_ov_avail" required>Availability</Label>
                     <AvailabilityPicker id="fe_lt_ov_avail" days={feLtOvDays} onDaysChange={setFeLtOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.fe_lt_ov_days} />
                     <FieldError msg={extraErrors.fe_lt_ov_days} /></div>
@@ -855,7 +855,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                     <StatesMultiSelect id="fe_pc_ov_states" value={fePcOvStates} onChange={setFePcOvStates} error={extraErrors.fe_pc_ov_states} />
                     <FieldError msg={extraErrors.fe_pc_ov_states} /></div>
                   <div><Label htmlFor="fe_pc_ov_startDate" required>Preferred Start Date</Label>
-                    {dateInput('fe_pc_ov_startDate', 'input-fe-pc-ov-start', 'fe_pc_ov_startDate', true)}</div>
+                    {dateInput('fe_pc_ov_startDate', 'input-fe-pc-ov-start', 'fe_pc_ov_startDate', false)}</div>
                   <div><Label htmlFor="fe_pc_ov_avail" required>Availability</Label>
                     <AvailabilityPicker id="fe_pc_ov_avail" days={fePcOvDays} onDaysChange={setFePcOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.fe_pc_ov_days} />
                     <FieldError msg={extraErrors.fe_pc_ov_days} /></div>
@@ -880,7 +880,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                     <StatesMultiSelect id="mc_cb_ov_states" value={mcCbOvStates} onChange={setMcCbOvStates} error={extraErrors.mc_cb_ov_states} />
                     <FieldError msg={extraErrors.mc_cb_ov_states} /></div>
                   <div><Label htmlFor="mc_cb_ov_startDate" required>Preferred Start Date</Label>
-                    {dateInput('mc_cb_ov_startDate', 'input-mc-cb-ov-start', 'mc_cb_ov_startDate', true)}</div>
+                    {dateInput('mc_cb_ov_startDate', 'input-mc-cb-ov-start', 'mc_cb_ov_startDate', false)}</div>
                   <div><Label htmlFor="mc_cb_ov_agencyMention" required>Agency Name to Mention</Label>
                     <input id="mc_cb_ov_agencyMention" placeholder="Override agency name" className={errors.mc_cb_ov_agencyMention ? errorInputClass : inputClass}
                       {...register('mc_cb_ov_agencyMention', { required: mcCbOverride ? 'Required.' : false })} />
@@ -890,8 +890,8 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                   <div id="mc_cb_package" data-testid="display-mc-cb-package" className="rounded-[10px] border border-[#243e62] bg-[#080f1c] px-3.5 py-2.5 text-sm text-[#7a95ba]">{getPackageLabel(cart, 'Medicare', 'Callback Leads')}</div></div>
                 <div><Label htmlFor="mc_cb_leadType" required>Lead Type</Label>
                   <RadioGroup name="mc_cb_leadType" options={['Medicare Supplement','Medicare Advantage','Both']} register={register as (n: string, o?: object) => object} error={errors.mc_cb_leadType?.message} /></div>
-                <div><Label htmlFor="mc_cb_deliveryDate" required>Preferred Delivery Date</Label>
-                  {dateInput('mc_cb_deliveryDate', 'input-mc-cb-delivery', 'mc_cb_deliveryDate', true)}</div>
+                <div><Label htmlFor="mc_cb_deliveryDate">Preferred Delivery Date</Label>
+                  {dateInput('mc_cb_deliveryDate', 'input-mc-cb-delivery', 'mc_cb_deliveryDate', false)}</div>
                 <div><Label htmlFor="mc_cb_format" required>Delivery Format</Label>
                   <RadioGroup name="mc_cb_format" options={['CSV','PDF']} register={register as (n: string, o?: object) => object} error={errors.mc_cb_format?.message} /></div>
               </ProductSectionCard>
@@ -906,7 +906,7 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                     <StatesMultiSelect id="mc_lt_ov_states" value={mcLtOvStates} onChange={setMcLtOvStates} error={extraErrors.mc_lt_ov_states} />
                     <FieldError msg={extraErrors.mc_lt_ov_states} /></div>
                   <div><Label htmlFor="mc_lt_ov_startDate" required>Preferred Start Date</Label>
-                    {dateInput('mc_lt_ov_startDate', 'input-mc-lt-ov-start', 'mc_lt_ov_startDate', true)}</div>
+                    {dateInput('mc_lt_ov_startDate', 'input-mc-lt-ov-start', 'mc_lt_ov_startDate', false)}</div>
                   <div><Label htmlFor="mc_lt_ov_avail" required>Availability</Label>
                     <AvailabilityPicker id="mc_lt_ov_avail" days={mcLtOvDays} onDaysChange={setMcLtOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.mc_lt_ov_days} />
                     <FieldError msg={extraErrors.mc_lt_ov_days} /></div>

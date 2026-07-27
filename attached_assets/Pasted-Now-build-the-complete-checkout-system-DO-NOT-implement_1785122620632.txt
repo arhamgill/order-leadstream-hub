@@ -1,0 +1,178 @@
+Now build the complete checkout system.
+
+DO NOT implement payments yet.
+
+The customer should click "Proceed To Checkout."
+
+Show ONE checkout page.
+
+Never show multiple forms.
+
+The system should generate form sections dynamically based on what products are inside the cart.
+
+--------------------------------------------------
+
+Customer Information
+
+Always show
+
+First Name *
+
+Last Name *
+
+Agency Name
+
+Phone *
+
+Email *
+
+--------------------------------------------------
+
+If cart contains
+
+Final Expense Callback Leads
+
+Show
+
+Licensed States
+
+Multi Select
+
+Package
+(Read Only)
+
+Preferred Start Date
+
+Preferred Delivery Date
+
+Delivery Format
+
+CSV
+
+PDF
+
+Agency Name to Mention to Prospect
+
+--------------------------------------------------
+
+If cart contains
+
+Final Expense Live Transfers
+
+Show
+
+Licensed States
+
+Package
+
+Preferred Start Date
+
+Transfer Phone Number
+
+Calls Per Day
+
+Availability
+
+--------------------------------------------------
+
+If cart contains
+
+Final Expense Pre Closed
+
+Show
+
+Licensed States
+
+Package
+
+Preferred Start Date
+
+Carriers
+
+Availability
+
+--------------------------------------------------
+
+If cart contains
+
+Medicare Callback Leads
+
+Show
+
+Licensed States
+
+Package
+
+Lead Type
+
+Medicare Supplement
+
+Medicare Advantage
+
+Both
+
+Preferred Start Date
+
+Preferred Delivery Date
+
+Delivery Format
+
+CSV
+
+PDF
+
+Agency Name to Mention
+
+--------------------------------------------------
+
+If cart contains
+
+Medicare Live Transfers
+
+Show
+
+Licensed States
+
+Package
+
+Lead Type
+
+Supplement
+
+Advantage
+
+Both
+
+Preferred Start Date
+
+Transfer Phone Number
+
+Calls Per Day
+
+Availability
+
+--------------------------------------------------
+
+Comments Section
+
+Additional Instructions
+
+Textarea
+
+Placeholder:
+
+If we missed anything or you have additional information regarding your order, please let us know here.
+
+--------------------------------------------------
+
+Required Checkbox
+
+I have read and agree to the LeadStream Hub Terms & Conditions.
+
+Link
+
+https://leadstreamhub.com/terms-conditions/
+
+Validate every required field.
+
+Make the entire form beautiful and easy to complete.

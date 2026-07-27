@@ -46,7 +46,7 @@ const US_STATES = [
   'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
   'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
 ];
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 const money = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
@@ -772,10 +772,11 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
   }
 
   // ── Helpers for rendering ──
+  const today = new Date().toISOString().split('T')[0];
   const dateInput = (id: string, testId: string, regName: keyof FormValues, required?: boolean) => (
     <div className="relative">
       <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4d6a8e]" />
-      <input id={id} type="date" data-testid={testId}
+      <input id={id} type="date" data-testid={testId} min={today}
         className={`pl-9 ${((errors[regName] || extraErrors[regName]) ? errorInputClass : inputClass)}`}
         {...register(regName as Parameters<typeof register>[0], required ? { required: 'Date is required.' } : {})} />
       <FieldError msg={errors[regName]?.message as string | undefined} />

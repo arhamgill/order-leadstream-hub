@@ -1,22 +1,35 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: LeadStream Hub API — customer portal + admin dashboard
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: admin-auth
+    description: Admin authentication
+  - name: admin-dashboard
+    description: Admin dashboard stats
+  - name: admin-orders
+    description: Admin order management
+  - name: admin-customers
+    description: Admin customer management
+  - name: admin-products
+    description: Admin product catalog management
+  - name: admin-settings
+    description: Admin settings management
+  - name: catalog
+    description: Public product catalog
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +37,784 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Public Catalog ────────────────────────────────────────────
+  /catalog:
+    get:
+      operationId: getCatalog
+      tags: [catalog]
+      summary: Get product catalog
+      description: Returns all active products with packages (served to the customer portal)
+      responses:
+        "200":
+          description: Product catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogProduct"
+
+  # ─── Admin Auth ────────────────────────────────────────────────
+  /admin/auth/login:
+    post:
+      operationId: adminLogin
+      tags: [admin-auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Invalid credentials
+
+  # ─── Admin Dashboard ───────────────────────────────────────────
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin-dashboard]
+      summary: Dashboard statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/revenue-chart:
+    get:
+      operationId: getRevenueChart
+      tags: [admin-dashboard]
+      summary: Monthly revenue chart data (last 6 months)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Revenue chart data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenuePoint"
+
+  # ─── Admin Orders ──────────────────────────────────────────────
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin-orders]
+      summary: List orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 25 }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: payment_method
+          in: query
+          schema: { type: string }
+        - name: date_from
+          in: query
+          schema: { type: string }
+        - name: date_to
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Paginated order list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderList"
+
+  /admin/orders/{id}:
+    get:
+      operationId: getAdminOrder
+      tags: [admin-orders]
+      summary: Get order detail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Full order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderDetail"
+        "404":
+          description: Order not found
+
+  /admin/orders/{id}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [admin-orders]
+      summary: Update order status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/orders/{id}/approve:
+    post:
+      operationId: approveOrderPayment
+      tags: [admin-orders]
+      summary: Approve Zelle payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Payment approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/orders/{id}/reject:
+    post:
+      operationId: rejectOrderPayment
+      tags: [admin-orders]
+      summary: Reject payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectPaymentInput"
+      responses:
+        "200":
+          description: Payment rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/orders/{id}/refund:
+    post:
+      operationId: refundOrder
+      tags: [admin-orders]
+      summary: Refund order (Stripe only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Refund initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/orders/{id}/notes:
+    post:
+      operationId: addOrderNote
+      tags: [admin-orders]
+      summary: Add internal note to order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteInput"
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminNote"
+
+  /admin/orders/{id}/notes/{noteId}:
+    delete:
+      operationId: deleteOrderNote
+      tags: [admin-orders]
+      summary: Delete internal note
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: noteId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Note deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ─── Admin Customers ───────────────────────────────────────────
+  /admin/customers:
+    get:
+      operationId: listAdminCustomers
+      tags: [admin-customers]
+      summary: List customers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 25 }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Paginated customer list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCustomerList"
+
+  /admin/customers/{id}:
+    get:
+      operationId: getAdminCustomer
+      tags: [admin-customers]
+      summary: Get customer detail with orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Customer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCustomerDetail"
+        "404":
+          description: Customer not found
+
+  # ─── Admin Products ────────────────────────────────────────────
+  /admin/products:
+    get:
+      operationId: listAdminProducts
+      tags: [admin-products]
+      summary: List all products
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminProduct"
+
+  /admin/products/{id}:
+    put:
+      operationId: updateAdminProduct
+      tags: [admin-products]
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProduct"
+
+  # ─── Admin Settings ────────────────────────────────────────────
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin-settings]
+      summary: Get all admin settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsResult"
+
+    patch:
+      operationId: updateAdminSettings
+      tags: [admin-settings]
+      summary: Update settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsResult"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+
+    # ─── Auth ──────────────────────────────────────────────────
+    AdminLoginInput:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string }
+
+    AdminLoginResult:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+
+    # ─── Catalog ───────────────────────────────────────────────
+    CatalogPackage:
+      type: object
+      required: [quantity, price]
+      properties:
+        quantity: { type: integer }
+        price: { type: number }
+        savings: { type: ["number", "null"] }
+        savings_label: { type: ["string", "null"] }
+
+    CatalogProduct:
+      type: object
+      required: [id, category, type, description, packages, active, sort_order]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        type: { type: string }
+        description: { type: string }
+        buffer: { type: ["string", "null"] }
+        active: { type: boolean }
+        sort_order: { type: integer }
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogPackage"
+
+    # ─── Dashboard ─────────────────────────────────────────────
+    AdminStats:
+      type: object
+      required:
+        - today_orders
+        - monthly_revenue_cents
+        - pending_orders
+        - completed_orders
+        - pending_payments
+        - total_customers
+      properties:
+        today_orders: { type: integer }
+        monthly_revenue_cents: { type: integer }
+        pending_orders: { type: integer }
+        completed_orders: { type: integer }
+        pending_payments: { type: integer }
+        total_customers: { type: integer }
+
+    RevenuePoint:
+      type: object
+      required: [month, revenue_cents, order_count]
+      properties:
+        month: { type: string }
+        revenue_cents: { type: integer }
+        order_count: { type: integer }
+
+    # ─── Orders ────────────────────────────────────────────────
+    OrderSummary:
+      type: object
+      required:
+        - id
+        - order_number
+        - customer_name
+        - customer_email
+        - status
+        - payment_method
+        - payment_status
+        - total_cents
+        - item_count
+        - created_at
+      properties:
+        id: { type: string }
+        order_number: { type: string }
+        customer_name: { type: string }
+        customer_email: { type: string }
+        agency_name: { type: ["string", "null"] }
+        status: { type: string }
+        payment_method: { type: string }
+        payment_status: { type: string }
+        total_cents: { type: integer }
+        subtotal_cents: { type: integer }
+        fee_cents: { type: integer }
+        discount_cents: { type: integer }
+        item_count: { type: integer }
+        created_at: { type: string }
+
+    AdminOrderList:
+      type: object
+      required: [orders, total, page, limit]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSummary"
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+
+    OrderItem:
+      type: object
+      required: [id, category, type, quantity, price_cents, savings_cents]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        type: { type: string }
+        quantity: { type: integer }
+        price_cents: { type: integer }
+        savings_cents: { type: integer }
+
+    ProductAnswer:
+      type: object
+      required: [id, product_key, overridden, answers]
+      properties:
+        id: { type: string }
+        product_key: { type: string }
+        overridden: { type: boolean }
+        answers: {}
+
+    AdminNote:
+      type: object
+      required: [id, order_id, note, created_at]
+      properties:
+        id: { type: string }
+        order_id: { type: string }
+        note: { type: string }
+        created_at: { type: string }
+
+    PaymentRecord:
+      type: object
+      required: [id, method, status, amount_cents, created_at]
+      properties:
+        id: { type: string }
+        method: { type: string }
+        status: { type: string }
+        amount_cents: { type: integer }
+        stripe_payment_intent_id: { type: ["string", "null"] }
+        stripe_status: { type: ["string", "null"] }
+        zelle_screenshot_url: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    StatusHistoryEntry:
+      type: object
+      required: [id, from_status, to_status, created_at]
+      properties:
+        id: { type: string }
+        from_status: { type: ["string", "null"] }
+        to_status: { type: string }
+        note: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    AdminOrderDetail:
+      type: object
+      required:
+        - id
+        - order_number
+        - status
+        - payment_method
+        - subtotal_cents
+        - fee_cents
+        - discount_cents
+        - total_cents
+        - created_at
+        - customer
+        - items
+        - product_answers
+        - payment
+        - notes
+        - status_history
+        - default_settings
+      properties:
+        id: { type: string }
+        order_number: { type: string }
+        status: { type: string }
+        payment_method: { type: string }
+        subtotal_cents: { type: integer }
+        fee_cents: { type: integer }
+        discount_cents: { type: integer }
+        total_cents: { type: integer }
+        additional_instructions: { type: ["string", "null"] }
+        created_at: { type: string }
+        default_settings: {}
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        product_answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductAnswer"
+        payment:
+          $ref: "#/components/schemas/PaymentRecord"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminNote"
+        status_history:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusHistoryEntry"
+
+    OrderStatusUpdate:
+      type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
+          enum: [pending, paid, processing, completed, refunded]
+        note: { type: string }
 
+    RejectPaymentInput:
+      type: object
+      properties:
+        reason: { type: string }
+
+    NoteInput:
+      type: object
+      required: [note]
+      properties:
+        note: { type: string }
+
+    # ─── Customers ─────────────────────────────────────────────
+    CustomerInfo:
+      type: object
+      required: [id, first_name, last_name, email, phone, created_at]
+      properties:
+        id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        agency_name: { type: ["string", "null"] }
+        email: { type: string }
+        phone: { type: string }
+        created_at: { type: string }
+
+    CustomerSummary:
+      type: object
+      required: [id, first_name, last_name, email, phone, order_count, total_spent_cents, created_at]
+      properties:
+        id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        agency_name: { type: ["string", "null"] }
+        email: { type: string }
+        phone: { type: string }
+        order_count: { type: integer }
+        total_spent_cents: { type: integer }
+        last_order_at: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    AdminCustomerList:
+      type: object
+      required: [customers, total, page, limit]
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerSummary"
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+
+    AdminCustomerDetail:
+      type: object
+      required: [customer, orders]
+      properties:
+        customer:
+          $ref: "#/components/schemas/CustomerInfo"
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderSummary"
+
+    # ─── Products ──────────────────────────────────────────────
+    AdminPackage:
+      type: object
+      required: [quantity, price_dollars]
+      properties:
+        quantity: { type: integer }
+        price_dollars: { type: number }
+        savings_dollars: { type: ["number", "null"] }
+        savings_label: { type: ["string", "null"] }
+
+    AdminProduct:
+      type: object
+      required: [id, category, type, description, packages, active, sort_order]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        type: { type: string }
+        description: { type: string }
+        buffer: { type: ["string", "null"] }
+        active: { type: boolean }
+        sort_order: { type: integer }
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPackage"
+
+    ProductUpdate:
+      type: object
+      properties:
+        category: { type: string }
+        type: { type: string }
+        description: { type: string }
+        buffer: { type: ["string", "null"] }
+        active: { type: boolean }
+        sort_order: { type: integer }
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPackage"
+
+    # ─── Settings ──────────────────────────────────────────────
+    AdminSettingsResult:
+      type: object
+      required:
+        - business_email
+        - business_phone
+        - zelle_phone
+        - zelle_name
+        - from_email
+        - admin_email
+        - stripe_publishable_key
+        - card_fee_percent
+        - zelle_discount_percent
+      properties:
+        business_email: { type: string }
+        business_phone: { type: string }
+        zelle_phone: { type: string }
+        zelle_name: { type: string }
+        from_email: { type: string }
+        admin_email: { type: string }
+        stripe_publishable_key: { type: string }
+        card_fee_percent: { type: number }
+        zelle_discount_percent: { type: number }
+
+    SettingsUpdate:
+      type: object
+      properties:
+        business_email: { type: string }
+        business_phone: { type: string }
+        zelle_phone: { type: string }
+        zelle_name: { type: string }
+        from_email: { type: string }
+        admin_email: { type: string }
+        card_fee_percent: { type: number }
+        zelle_discount_percent: { type: number }

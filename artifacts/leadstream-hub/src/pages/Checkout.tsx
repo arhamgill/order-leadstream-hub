@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Copy,
   CreditCard,
   ExternalLink,
   Globe2,
@@ -468,6 +469,15 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
   const [uploadError, setUploadError] = useState('');
   const [uploadDone, setUploadDone]   = useState(false);
   const zelleInputRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Computed totals for Zelle (so we can show "amount to send" in the panel)
+  const zelleSubtotalCents = useMemo(
+    () => cart.reduce((s, i) => s + i.price * i.quantity * 100, 0),
+    [cart]
+  );
+  const zelleDiscountCents = Math.round(zelleSubtotalCents * 0.10);
+  const zelleTotalCents    = zelleSubtotalCents - zelleDiscountCents;
 
   // Product presence
   const hasFeCb = hasProduct(cart, 'Final Expense', 'Callback Leads');
@@ -962,13 +972,35 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                         <div className="rounded-[10px] border border-[#62d8f0]/20 bg-[#062030]/60 px-4 py-3 text-[12px] text-[#62d8f0]">
                           🎉 <strong>10% Zelle discount</strong> applied automatically to your order total.
                         </div>
+                        {/* Amount to send */}
+                        {zelleSubtotalCents > 0 && (
+                          <div className="rounded-[10px] border border-[#1d5cc4]/50 bg-[#0f2044]/80 px-4 py-3 flex items-center justify-between">
+                            <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a95ba]">Amount to Send</div>
+                            <div className="text-2xl font-bold text-white">{money(zelleTotalCents)}</div>
+                          </div>
+                        )}
                         {/* Send to */}
                         {settings?.zelle_phone && (
                           <div className="space-y-1.5">
                             <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7a95ba]">Send Payment To</div>
-                            <div className="rounded-[10px] border border-[#1d3558] bg-[#0a1628] px-4 py-3">
-                              <div className="text-base font-bold text-white">{settings.zelle_phone}</div>
-                              {settings.zelle_name && <div className="text-xs text-[#7a95ba] mt-0.5">{settings.zelle_name}</div>}
+                            <div className="rounded-[10px] border border-[#1d3558] bg-[#0a1628] px-4 py-3 flex items-center justify-between gap-3">
+                              <div>
+                                <div className="text-base font-bold text-white">{settings.zelle_phone}</div>
+                                {settings.zelle_name && <div className="text-xs text-[#7a95ba] mt-0.5">{settings.zelle_name}</div>}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(settings.zelle_phone);
+                                  setCopied(true);
+                                  setTimeout(() => setCopied(false), 2000);
+                                }}
+                                className="flex shrink-0 items-center gap-1.5 rounded-[8px] border border-[#1d3558] bg-[#0d1b2e] px-3 py-1.5 text-[11px] font-semibold text-[#62d8f0] transition hover:bg-[#0f2044] hover:border-[#3e7dda]"
+                              >
+                                {copied
+                                  ? <><Check className="h-3.5 w-3.5" /> Copied</>
+                                  : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                              </button>
                             </div>
                           </div>
                         )}

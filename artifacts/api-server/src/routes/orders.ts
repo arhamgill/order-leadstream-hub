@@ -65,6 +65,15 @@ ordersRouter.post(
       }
 
       const supabase = getSupabaseClient();
+
+      // Ensure the storage bucket exists (creates it if missing; safe to call if it already exists)
+      await supabase.storage.createBucket("payment-screenshots", {
+        public: false,
+        fileSizeLimit: 15 * 1024 * 1024,
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf"],
+      });
+      // Ignore the error — Supabase returns an error if the bucket already exists, which is fine.
+
       const ext = req.file.originalname.split(".").pop() ?? "jpg";
       const storagePath = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 

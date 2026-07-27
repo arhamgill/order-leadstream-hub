@@ -1,0 +1,143 @@
+Build the complete frontend UI for the LeadStream Hub Order Portal.
+
+DO NOT implement payments or database yet.
+
+The goal of this phase is to build a beautiful, responsive, modern ordering experience.
+
+Tech Stack:
+- Next.js
+- React
+- Tailwind CSS
+- Framer Motion
+
+Requirements:
+
+Create an Order Now page matching the branding of https://leadstreamhub.com.
+
+Hero Section
+
+Heading:
+Order Exclusive Insurance Leads
+
+Subheading:
+Choose the insurance products you need, customize your order, and securely complete your purchase in just a few minutes.
+
+Below the hero create three large segmented buttons.
+
+• Final Expense
+• Medicare
+• ACA
+
+ACA should simply display:
+"Coming Soon"
+
+When Final Expense is selected show three premium product cards.
+
+1. Callback Leads
+Description:
+Exclusive, self-generated Final Expense prospects who have requested information about Final Expense insurance.
+
+Packages:
+
+20 Pack - $400
+
+30 Pack - $600
+
+50 Pack - $900
+Save $100
+
+100 Pack - $1700
+Save $300
+
+Every package should have an "Add to Cart" button.
+
+--------------------------------------------------
+
+2. Live Transfers
+
+Description:
+Receive warm, qualified Final Expense prospects transferred directly to your licensed agents.
+
+120 Second Buffer
+
+Packages:
+
+10 - $350
+
+20 - $700
+
+30 - $950
+Save $100
+
+50 - $1500
+Save $250
+
+100 - $2800
+Save $700
+
+--------------------------------------------------
+
+3. Pre Closed Applications
+
+Description:
+Receive approved Final Expense applications that have already completed the majority of the enrollment process.
+
+Packages
+
+5 - $1000
+
+10 - $1850
+Save $150
+
+15 - $2700
+Save $300
+
+20 - $3400
+Save $600
+
+--------------------------------------------------
+
+When Medicare is selected show
+
+• Callback Leads
+• Live Transfers
+
+using the exact same pricing.
+
+--------------------------------------------------
+
+Shopping Cart
+
+Create a floating shopping cart.
+
+The customer should be able to add multiple products.
+
+Example:
+
+50 Callback Leads
+
+20 Live Transfers
+
+10 Medicare Leads
+
+All together.
+
+The cart should update instantly.
+
+Show:
+
+Subtotal
+
+Number of Products
+
+Estimated Savings
+
+Proceed To Checkout
+
+No payment or forms yet.
+
+Only frontend UI.
+
+The UI should feel like Shopify or Stripe Checkout.
+
+Everything must be responsive and animated.

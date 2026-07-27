@@ -560,7 +560,20 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
     if (hasMcCb && mcCbOverride && mcCbOvStates.length === 0) errs.mc_cb_ov_states = 'Please select at least one state.';
     if (hasMcLt && mcLtOverride && mcLtOvStates.length === 0) errs.mc_lt_ov_states = 'Please select at least one state.';
     if (hasMcLt && mcLtOverride && mcLtOvDays.length === 0)   errs.mc_lt_ov_days   = 'Please select at least one day.';
-    if (Object.keys(errs).length > 0) { setExtraErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setExtraErrors(errs);
+      // Scroll to the first failing field so the user can see the error
+      setTimeout(() => {
+        const firstKey = Object.keys(errs)[0];
+        const el = document.getElementById(firstKey) ?? document.querySelector(`[data-error="${firstKey}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 50);
+      return;
+    }
     setExtraErrors({});
     setSubmitting(true);
     setSubmitError('');
@@ -1052,6 +1065,18 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
               {submitError && (
                 <div className="mt-4 rounded-[10px] border border-[#a04040]/40 bg-[#2a0f0f]/40 px-4 py-3 text-sm text-[#f4a8a8]">
                   {submitError}
+                </div>
+              )}
+
+              {/* Inline validation summary — shown above Submit when there are extra errors */}
+              {Object.keys(extraErrors).length > 0 && (
+                <div className="mt-4 rounded-[10px] border border-[#a04040]/40 bg-[#2a0f0f]/40 px-4 py-3 text-sm text-[#f4a8a8] space-y-1">
+                  <p className="font-semibold">Please fix the following before submitting:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    {Object.values(extraErrors).map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 

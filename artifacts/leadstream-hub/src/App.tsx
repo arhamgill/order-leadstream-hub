@@ -15,63 +15,70 @@ import CheckoutPage from './pages/Checkout';
 import type { CartItem, Category, Package, Product, ProductType } from './types';
 
 // ─── Product Data ─────────────────────────────────────────────────────────────
+// Products are NOT hardcoded — they're fetched live from GET /api/catalog,
+// which reads the Supabase `products` table. Editing a product (description,
+// price, packages, active flag, stock) in the admin dashboard changes what
+// shows here. See `useCatalog` below.
 
-const callbackPackages: Package[] = [
-  { quantity: 20, price: 400 },
-  { quantity: 30, price: 600 },
-  { quantity: 50, price: 900, savings: 100 },
-  { quantity: 100, price: 1700, savings: 300 },
-];
-
-const liveTransferPackages: Package[] = [
-  { quantity: 10, price: 350 },
-  { quantity: 20, price: 700 },
-  { quantity: 30, price: 950, savings: 100 },
-  { quantity: 50, price: 1500, savings: 250 },
-  { quantity: 100, price: 2800, savings: 700 },
-];
-
-const preClosedPackages: Package[] = [
-  { quantity: 5, price: 1000 },
-  { quantity: 10, price: 1850, savings: 150 },
-  { quantity: 15, price: 2700, savings: 300 },
-  { quantity: 20, price: 3400, savings: 600 },
-];
-
-const descriptionByType: Record<ProductType, string> = {
-  'Callback Leads':
-    'Exclusive, self-generated prospects who have requested information about this insurance product.',
-  'Live Transfers':
-    'Receive warm, qualified prospects transferred directly to your licensed agents.',
-  'Pre Closed Applications':
-    'Receive approved applications that have already completed the majority of the enrollment process.',
+type RawCatalogPackage = { quantity: number; price: number; savings?: number | null };
+type RawCatalogProduct = {
+  id: string;
+  category: string;
+  type: string;
+  description: string;
+  buffer?: string | null;
+  active: boolean;
+  sort_order: number;
+  stock_remaining?: number | null;
+  packages: RawCatalogPackage[];
 };
 
-const makeProduct = (category: Category, type: ProductType, packages: Package[]): Product => ({
-  id: `${category}-${type}`.toLowerCase().replaceAll(' ', '-'),
-  category,
-  type,
-  description:
-    category === 'Final Expense'
-      ? descriptionByType[type]
-      : type === 'Pre Closed Applications'
-        ? descriptionByType[type]
-        : descriptionByType[type].replace('this insurance product', category),
-  buffer: type === 'Live Transfers' ? '120 Second Buffer' : undefined,
-  packages,
-});
+function mapCatalogProduct(row: RawCatalogProduct): Product {
+  return {
+    id: row.id,
+    category: row.category as Category,
+    type: row.type as ProductType,
+    description: row.description,
+    buffer: row.buffer ?? undefined,
+    stockRemaining: row.stock_remaining ?? undefined,
+    packages: row.packages.map((p) => ({
+      quantity: p.quantity,
+      price: p.price,
+      savings: p.savings ?? undefined,
+    })),
+  };
+}
 
-const productsByCategory: Record<Exclude<Category, 'ACA'>, Product[]> = {
-  'Final Expense': [
-    makeProduct('Final Expense', 'Callback Leads', callbackPackages),
-    makeProduct('Final Expense', 'Live Transfers', liveTransferPackages),
-    makeProduct('Final Expense', 'Pre Closed Applications', preClosedPackages),
-  ],
-  Medicare: [
-    makeProduct('Medicare', 'Callback Leads', callbackPackages),
-    makeProduct('Medicare', 'Live Transfers', liveTransferPackages),
-  ],
-};
+type CatalogState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'ready'; products: Product[] };
+
+/** Fetches the live product catalog from the API. Call `.reload()` to retry after an error. */
+function useCatalog(): CatalogState & { reload: () => void } {
+  const [state, setState] = useState<CatalogState>({ status: 'loading' });
+
+  const load = () => {
+    setState({ status: 'loading' });
+    fetch('/api/catalog')
+      .then((r) => {
+        if (!r.ok) throw new Error(`Catalog request failed: ${r.status}`);
+        return r.json();
+      })
+      .then((rows: RawCatalogProduct[]) => {
+        const products = rows
+          .filter((r) => r.active)
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map(mapCatalogProduct);
+        setState({ status: 'ready', products });
+      })
+      .catch(() => setState({ status: 'error' }));
+  };
+
+  useEffect(load, []);
+
+  return { ...state, reload: load };
+}
 
 const money = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
@@ -289,6 +296,25 @@ function ProductCard({
   );
 }
 
+function ProductListSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="glass-panel animate-pulse rounded-[22px] p-5 sm:p-6">
+          <div className="mb-5 flex items-start gap-3.5">
+            <div className="h-11 w-11 shrink-0 rounded-[13px] bg-white/5" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-40 rounded bg-white/5" />
+              <div className="h-3 w-full max-w-[28rem] rounded bg-white/5" />
+            </div>
+          </div>
+          <div className="h-24 rounded-[14px] bg-white/5" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmptyCart({ onBrowse }: { onBrowse: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
@@ -473,30 +499,12 @@ function Home() {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
 
-  // Live stock counts (admin-controlled) fetched from the catalog API, keyed by
-  // product id. Merged onto the static product data below.
-  const [stockById, setStockById] = useState<Record<string, number | null>>({});
-  useEffect(() => {
-    fetch('/api/catalog')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows: Array<{ id: string; stock_remaining: number | null }>) => {
-        const map: Record<string, number | null> = {};
-        for (const row of rows) map[row.id] = row.stock_remaining ?? null;
-        setStockById(map);
-      })
-      .catch(() => {});
-  }, []);
+  const catalog = useCatalog();
 
-  const products = useMemo(
-    () =>
-      selectedCategory === 'ACA'
-        ? []
-        : productsByCategory[selectedCategory].map((p) => ({
-            ...p,
-            stockRemaining: p.id in stockById ? stockById[p.id] : undefined,
-          })),
-    [selectedCategory, stockById],
-  );
+  const products = useMemo(() => {
+    if (selectedCategory === 'ACA' || catalog.status !== 'ready') return [];
+    return catalog.products.filter((p) => p.category === selectedCategory);
+  }, [selectedCategory, catalog]);
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -633,11 +641,31 @@ function Home() {
                       {categoryMeta[selectedCategory].description}
                     </p>
                   </div>
-                  <div className="space-y-4">
-                    {products.map((product, index) => (
-                      <ProductCard key={product.id} product={product} index={index} onAdd={addToCart} />
-                    ))}
-                  </div>
+                  {catalog.status === 'loading' && <ProductListSkeleton />}
+                  {catalog.status === 'error' && (
+                    <div className="glass-panel flex flex-col items-center justify-center gap-3 rounded-[22px] px-6 py-12 text-center">
+                      <p className="text-sm text-[#e0eaff]">Couldn't load the catalog right now.</p>
+                      <button
+                        type="button"
+                        onClick={catalog.reload}
+                        className="focus-ring rounded-full border border-[#3d6ca1] px-4 py-2 text-xs font-semibold text-[#bad8f4] transition hover:bg-[#18365d]"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  )}
+                  {catalog.status === 'ready' && products.length === 0 && (
+                    <div className="glass-panel rounded-[22px] px-6 py-12 text-center text-sm text-[#8fa6c4]">
+                      No products currently available in this category.
+                    </div>
+                  )}
+                  {catalog.status === 'ready' && products.length > 0 && (
+                    <div className="space-y-4">
+                      {products.map((product, index) => (
+                        <ProductCard key={product.id} product={product} index={index} onAdd={addToCart} />
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

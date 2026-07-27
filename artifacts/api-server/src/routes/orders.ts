@@ -90,34 +90,32 @@ ordersRouter.post(
         return;
       }
 
-      // Get a signed URL valid for 7 days (admin access only)
-      const { data: signedData, error: signedErr } = await supabase.storage
+      // Get a signed URL valid for 30 days
+      const { data: signedData } = await supabase.storage
         .from("payment-screenshots")
-        .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+        .createSignedUrl(storagePath, 60 * 60 * 24 * 30);
 
       const publicUrl = signedData?.signedUrl ?? "";
 
-      // Save file record
-      const { data: fileRecord, error: dbErr } = await supabase
-        .from("uploaded_files")
-        .insert({
-          bucket: "payment-screenshots",
-          storage_path: storagePath,
-          original_name: req.file.originalname,
-          mime_type: req.file.mimetype,
-          size_bytes: req.file.size,
-          public_url: publicUrl,
-        })
-        .select("id")
-        .single();
-
-      if (dbErr || !fileRecord) {
-        logger.error({ err: dbErr }, "Failed to save file record");
-        res.status(500).json({ error: "Failed to record file." });
-        return;
+      // Try to save a file record for auditing — but don't fail the upload if the table doesn't exist yet
+      try {
+        await supabase
+          .from("uploaded_files")
+          .insert({
+            bucket: "payment-screenshots",
+            storage_path: storagePath,
+            original_name: req.file.originalname,
+            mime_type: req.file.mimetype,
+            size_bytes: req.file.size,
+            public_url: publicUrl,
+          });
+      } catch {
+        logger.warn("uploaded_files table not found — skipping file record (run supabase-schema.sql)");
       }
 
-      res.json({ file_id: fileRecord.id, url: publicUrl, path: storagePath });
+      // Return storagePath as file_id so order submission can use it directly
+      // even without the uploaded_files DB table
+      res.json({ file_id: storagePath, url: publicUrl, path: storagePath });
     } catch (err) {
       next(err);
     }
@@ -260,19 +258,29 @@ ordersRouter.post(
       // ── Get Zelle screenshot URL ──
       let zelleScreenshotUrl: string | undefined;
       if (payment.method === "zelle" && payment.zelle_file_id) {
-        const { data: fileData } = await supabase
-          .from("uploaded_files")
-          .select("public_url, storage_path")
-          .eq("id", payment.zelle_file_id)
-          .single();
+        const fileId = payment.zelle_file_id;
 
-        zelleScreenshotUrl = fileData?.public_url ?? undefined;
+        if (fileId.startsWith("uploads/")) {
+          // file_id is a storage path (upload ran without DB table) — create a fresh signed URL
+          const { data: signedData } = await supabase.storage
+            .from("payment-screenshots")
+            .createSignedUrl(fileId, 60 * 60 * 24 * 30);
+          zelleScreenshotUrl = signedData?.signedUrl ?? undefined;
+        } else {
+          // Legacy: file_id is a UUID from uploaded_files table
+          const { data: fileData } = await supabase
+            .from("uploaded_files")
+            .select("public_url, storage_path")
+            .eq("id", fileId)
+            .single();
+          zelleScreenshotUrl = fileData?.public_url ?? undefined;
 
-        // Link file to order
-        await supabase
-          .from("uploaded_files")
-          .update({ order_id: orderId })
-          .eq("id", payment.zelle_file_id);
+          // Link file to order
+          await supabase
+            .from("uploaded_files")
+            .update({ order_id: orderId })
+            .eq("id", fileId);
+        }
       }
 
       // ── Create payment record ──

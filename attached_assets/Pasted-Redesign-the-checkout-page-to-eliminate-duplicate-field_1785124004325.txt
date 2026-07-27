@@ -1,0 +1,298 @@
+Redesign the checkout page to eliminate duplicate fields and create a much better user experience.
+
+IMPORTANT:
+Do NOT simply remove fields. Instead, redesign the checkout flow so common information is collected once and automatically applied to every product in the order.
+
+====================================================
+
+CURRENT PROBLEM
+
+Right now every product asks for:
+
+• Licensed States
+• Preferred Start Date
+• Availability
+• Agency Name
+
+If a customer purchases 3 products, they have to enter the same information 3 times.
+
+This creates unnecessary friction and hurts conversion rates.
+
+====================================================
+
+NEW CHECKOUT STRUCTURE
+
+Keep Customer Information at the top.
+
+Customer Information
+
+• First Name *
+• Last Name *
+• Agency Name
+• Phone *
+• Email *
+
+----------------------------------------------------
+
+Immediately after Customer Information create a brand new section called:
+
+DEFAULT ORDER SETTINGS
+
+Add the following description:
+
+"These settings will automatically apply to every product in your cart. If you need different settings for a specific product, you can override them inside that product section."
+
+Fields:
+
+• Licensed States *
+(Multi Select)
+
+• Preferred Start Date *
+
+• Availability *
+
+Examples:
+Monday - Friday
+9:00 AM - 5:00 PM EST
+
+• Agency Name to Mention to Prospects *
+
+----------------------------------------------------
+
+PRODUCT SECTIONS
+
+Every product should now display ONLY product-specific fields.
+
+DO NOT repeat Licensed States, Start Date, Availability or Agency Name unless the customer explicitly overrides them.
+
+====================================================
+
+FINAL EXPENSE CALLBACK LEADS
+
+Show only:
+
+Package (Read Only)
+
+Preferred Delivery Date
+
+Delivery Format
+
+○ CSV
+
+○ PDF
+
+At the bottom display
+
+☐ Override Default Settings
+
+If enabled
+
+Show
+
+Licensed States
+
+Preferred Start Date
+
+Agency Name
+
+Otherwise automatically inherit the default values.
+
+====================================================
+
+FINAL EXPENSE LIVE TRANSFERS
+
+Show only
+
+Package (Read Only)
+
+Transfer Phone Number
+
+Calls Per Day
+
+At the bottom
+
+☐ Override Default Settings
+
+If enabled
+
+Show
+
+Licensed States
+
+Preferred Start Date
+
+Availability
+
+Otherwise inherit defaults.
+
+====================================================
+
+FINAL EXPENSE PRE CLOSED
+
+Show only
+
+Package (Read Only)
+
+Carriers
+
+(Text Area)
+
+At the bottom
+
+☐ Override Default Settings
+
+If enabled
+
+Show
+
+Licensed States
+
+Preferred Start Date
+
+Availability
+
+Otherwise inherit defaults.
+
+====================================================
+
+MEDICARE CALLBACK LEADS
+
+Show only
+
+Package (Read Only)
+
+Lead Type
+
+○ Medicare Supplement
+
+○ Medicare Advantage
+
+○ Both
+
+Preferred Delivery Date
+
+Delivery Format
+
+CSV
+
+PDF
+
+At the bottom
+
+☐ Override Default Settings
+
+If enabled
+
+Show
+
+Licensed States
+
+Preferred Start Date
+
+Agency Name
+
+Otherwise inherit defaults.
+
+====================================================
+
+MEDICARE LIVE TRANSFERS
+
+Show only
+
+Package (Read Only)
+
+Lead Type
+
+Transfer Phone Number
+
+Calls Per Day
+
+At the bottom
+
+☐ Override Default Settings
+
+If enabled
+
+Show
+
+Licensed States
+
+Preferred Start Date
+
+Availability
+
+Otherwise inherit defaults.
+
+====================================================
+
+ORDER SUMMARY
+
+Improve the order summary.
+
+Instead of displaying:
+
+1 Callback Leads
+
+Display:
+
+✓ 50 Final Expense Callback Leads
+
+✓ 20 Final Expense Live Transfers
+
+✓ 5 Final Expense Pre-Closed Applications
+
+Display:
+
+Subtotal
+
+Estimated Savings
+
+Payment Method
+
+Grand Total
+
+====================================================
+
+UI REQUIREMENTS
+
+Make the Default Order Settings section visually different from the product cards.
+
+Suggested title:
+
+🌎 Default Order Settings
+
+Use a lighter background or highlighted card so customers understand these settings apply globally.
+
+Each product card should contain a small badge that says:
+
+"Using Default Settings"
+
+If the customer clicks Override Default Settings, change the badge to:
+
+"Custom Settings"
+
+Animate the expand/collapse of the override section using Framer Motion.
+
+====================================================
+
+VALIDATION
+
+If Override Default Settings is OFF:
+
+The product should automatically use the values from Default Order Settings.
+
+Do not ask the customer to fill them again.
+
+If Override Default Settings is ON:
+
+Require those fields only for that product.
+
+====================================================
+
+GOAL
+
+The checkout should feel significantly shorter, cleaner, and easier to complete.
+
+Minimize duplicate inputs while preserving the flexibility for customers to customize individual products when necessary.
+
+Do not break any existing functionality. Keep all current validation, dynamic product rendering, and cart logic working while implementing this improved UX.

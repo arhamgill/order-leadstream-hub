@@ -585,7 +585,7 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
 
   const [extraErrors, setExtraErrors] = useState<Record<string, string>>({});
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     shouldUnregister: true,
     defaultValues: {
       firstName: '', lastName: '', agencyName: '', phone: '', email: '',
@@ -611,6 +611,11 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
   const fePcOverride = watch('fe_pc_override');
   const mcCbOverride = watch('mc_cb_override');
   const mcLtOverride = watch('mc_lt_override');
+
+  const defaultAvailHours = watch('default_availHours') ?? '';
+  const feLtOvAvailHours  = watch('fe_lt_ov_availHours') ?? '';
+  const fePcOvAvailHours  = watch('fe_pc_ov_availHours') ?? '';
+  const mcLtOvAvailHours  = watch('mc_lt_ov_availHours') ?? '';
 
   // ── Create PaymentIntent when card is selected ──
   useEffect(() => {
@@ -880,7 +885,7 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
               <div>
                 <Label htmlFor="default_avail" required>Availability</Label>
                 <AvailabilityPicker id="default_avail" days={defaultAvailDays} onDaysChange={setDefaultAvailDays}
-                  hours={''} onHoursChange={() => {}} error={extraErrors.default_availDays} />
+                  hours={defaultAvailHours} onHoursChange={(v) => setValue('default_availHours', v)} error={extraErrors.default_availDays} />
                 <FieldError msg={extraErrors.default_availDays} />
               </div>
               <div>
@@ -928,7 +933,7 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
                   <div><Label htmlFor="fe_lt_ov_startDate" required>Preferred Start Date</Label>
                     {dateInput('fe_lt_ov_startDate', 'input-fe-lt-ov-start', 'fe_lt_ov_startDate', false)}</div>
                   <div><Label htmlFor="fe_lt_ov_avail" required>Availability</Label>
-                    <AvailabilityPicker id="fe_lt_ov_avail" days={feLtOvDays} onDaysChange={setFeLtOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.fe_lt_ov_days} />
+                    <AvailabilityPicker id="fe_lt_ov_avail" days={feLtOvDays} onDaysChange={setFeLtOvDays} hours={feLtOvAvailHours} onHoursChange={(v) => setValue('fe_lt_ov_availHours', v)} error={extraErrors.fe_lt_ov_days} />
                     <FieldError msg={extraErrors.fe_lt_ov_days} /></div>
                 </>}>
                 <div><Label htmlFor="fe_lt_package">Package</Label>
@@ -959,7 +964,7 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
                   <div><Label htmlFor="fe_pc_ov_startDate" required>Preferred Start Date</Label>
                     {dateInput('fe_pc_ov_startDate', 'input-fe-pc-ov-start', 'fe_pc_ov_startDate', false)}</div>
                   <div><Label htmlFor="fe_pc_ov_avail" required>Availability</Label>
-                    <AvailabilityPicker id="fe_pc_ov_avail" days={fePcOvDays} onDaysChange={setFePcOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.fe_pc_ov_days} />
+                    <AvailabilityPicker id="fe_pc_ov_avail" days={fePcOvDays} onDaysChange={setFePcOvDays} hours={fePcOvAvailHours} onHoursChange={(v) => setValue('fe_pc_ov_availHours', v)} error={extraErrors.fe_pc_ov_days} />
                     <FieldError msg={extraErrors.fe_pc_ov_days} /></div>
                 </>}>
                 <div><Label htmlFor="fe_pc_package">Package</Label>
@@ -1010,7 +1015,7 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
                   <div><Label htmlFor="mc_lt_ov_startDate" required>Preferred Start Date</Label>
                     {dateInput('mc_lt_ov_startDate', 'input-mc-lt-ov-start', 'mc_lt_ov_startDate', false)}</div>
                   <div><Label htmlFor="mc_lt_ov_avail" required>Availability</Label>
-                    <AvailabilityPicker id="mc_lt_ov_avail" days={mcLtOvDays} onDaysChange={setMcLtOvDays} hours={''} onHoursChange={() => {}} error={extraErrors.mc_lt_ov_days} />
+                    <AvailabilityPicker id="mc_lt_ov_avail" days={mcLtOvDays} onDaysChange={setMcLtOvDays} hours={mcLtOvAvailHours} onHoursChange={(v) => setValue('mc_lt_ov_availHours', v)} error={extraErrors.mc_lt_ov_days} />
                     <FieldError msg={extraErrors.mc_lt_ov_days} /></div>
                 </>}>
                 <div><Label htmlFor="mc_lt_package">Package</Label>

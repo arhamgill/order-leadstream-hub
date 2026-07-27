@@ -19,12 +19,12 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
-  CardElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
@@ -426,6 +426,86 @@ function CheckoutHeader({ onBack }: { onBack: () => void }) {
   );
 }
 
+// ─── Card Payment Panel (PaymentElement with its own Elements context) ────────
+
+interface CardPaymentPanelHandle {
+  confirmCardPayment(billingDetails: {
+    name: string; email: string; phone: string;
+  }): Promise<{ paymentIntentId: string } | { error: string }>;
+}
+
+// Inner — must live inside <Elements options={{ clientSecret }}>
+const CardPaymentInner = forwardRef<CardPaymentPanelHandle, { cardError: string }>(
+  ({ cardError }, ref) => {
+    const stripe   = useStripe();
+    const elements = useElements();
+
+    useImperativeHandle(ref, () => ({
+      async confirmCardPayment(billingDetails) {
+        if (!stripe || !elements) return { error: 'Stripe not loaded. Please refresh.' };
+
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: window.location.href,
+            payment_method_data: {
+              billing_details: {
+                name: billingDetails.name,
+                email: billingDetails.email,
+                phone: billingDetails.phone,
+              },
+            },
+          },
+          redirect: 'if_required',
+        });
+
+        if (error) return { error: error.message ?? 'Payment failed.' };
+        if (paymentIntent?.status === 'succeeded') return { paymentIntentId: paymentIntent.id };
+        return { error: `Payment did not complete (status: ${paymentIntent?.status ?? 'unknown'}).` };
+      },
+    }));
+
+    return (
+      <div className="space-y-3">
+        <PaymentElement options={{
+          layout: 'tabs',
+          fields: { billingDetails: { name: 'never', email: 'never', phone: 'never' } },
+        }} />
+        {cardError && <FieldError msg={cardError} />}
+      </div>
+    );
+  }
+);
+CardPaymentInner.displayName = 'CardPaymentInner';
+
+// Outer wrapper — creates its own Elements context with clientSecret
+type StripePromise = ReturnType<typeof loadStripe> | null;
+const CardPaymentPanel = forwardRef<
+  CardPaymentPanelHandle,
+  { stripePromise: StripePromise; clientSecret: string; cardError: string }
+>(({ stripePromise, clientSecret, cardError }, ref) => (
+  <Elements
+    stripe={stripePromise}
+    options={{
+      clientSecret,
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary:      '#3e7dda',
+          colorBackground:   '#0d1b2e',
+          colorText:         '#e0eaff',
+          colorDanger:       '#f4a8a8',
+          fontFamily:        'DM Sans, sans-serif',
+          borderRadius:      '10px',
+        },
+      },
+    }}
+  >
+    <CardPaymentInner ref={ref} cardError={cardError} />
+  </Elements>
+));
+CardPaymentPanel.displayName = 'CardPaymentPanel';
+
 // ─── Form Types ───────────────────────────────────────────────────────────────
 
 type FormValues = {
@@ -449,18 +529,21 @@ type FormValues = {
 
 // ─── Inner Checkout Form (must be inside <Elements>) ─────────────────────────
 
-function InnerCheckoutForm({ cart, onBack, settings }: {
+function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
   cart: CartItem[]; onBack: () => void; settings: AppSettings | null;
+  stripePromise: StripePromise;
 }) {
-  const stripe   = useStripe();
-  const elements = useElements();
-
   const [submitted, setSubmitted] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'zelle' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [cardError, setCardError] = useState('');
+
+  // Card payment via PaymentElement
+  const cardPanelRef     = useRef<CardPaymentPanelHandle>(null);
+  const [cardClientSecret, setCardClientSecret] = useState('');
+  const [cardPICreating,   setCardPICreating]   = useState(false);
 
   // Zelle screenshot state
   const [zelleFile, setZelleFile]     = useState<File | null>(null);
@@ -471,13 +554,15 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
   const zelleInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
 
-  // Computed totals for Zelle (so we can show "amount to send" in the panel)
-  const zelleSubtotalCents = useMemo(
+  // Computed totals
+  const subtotalCents = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity * 100, 0),
     [cart]
   );
-  const zelleDiscountCents = Math.round(zelleSubtotalCents * 0.10);
-  const zelleTotalCents    = zelleSubtotalCents - zelleDiscountCents;
+  const zelleSubtotalCents = subtotalCents;
+  const zelleDiscountCents = Math.round(subtotalCents * 0.10);
+  const zelleTotalCents    = subtotalCents - zelleDiscountCents;
+  const cardTotalCents     = subtotalCents + Math.round(subtotalCents * 0.05);
 
   // Product presence
   const hasFeCb = hasProduct(cart, 'Final Expense', 'Callback Leads');
@@ -526,6 +611,24 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
   const fePcOverride = watch('fe_pc_override');
   const mcCbOverride = watch('mc_cb_override');
   const mcLtOverride = watch('mc_lt_override');
+
+  // ── Create PaymentIntent when card is selected ──
+  useEffect(() => {
+    if (paymentMethod !== 'card' || cardClientSecret || cardPICreating || !cardTotalCents) return;
+    setCardPICreating(true);
+    setCardError('');
+    const firstName = watch('firstName');
+    const lastName  = watch('lastName');
+    const email     = watch('email');
+    createPaymentIntent(cardTotalCents, {
+      email: email || undefined,
+      name: `${firstName} ${lastName}`.trim() || undefined,
+    })
+      .then(({ client_secret }) => setCardClientSecret(client_secret))
+      .catch(() => setCardError('Could not initialize card payment. Please refresh and try again.'))
+      .finally(() => setCardPICreating(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethod]);
 
   // ── Handle Zelle screenshot upload ──
   const handleFileSelect = async (file: File) => {
@@ -614,31 +717,29 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
       let orderNum = '';
 
       if (paymentMethod === 'card') {
-        if (!stripe || !elements) { setSubmitError('Stripe not loaded. Please refresh.'); setSubmitting(false); return; }
-        const cardElement = elements.getElement(CardElement);
-        if (!cardElement) { setSubmitError('Card element not found.'); setSubmitting(false); return; }
-
-        // Create PaymentIntent
-        const { client_secret } = await createPaymentIntent(totalCents);
-
-        // Confirm payment
-        const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: { name: `${data.firstName} ${data.lastName}`, email: data.email, phone: data.phone },
-          },
-        });
-
-        if (stripeError) {
-          setCardError(stripeError.message ?? 'Payment failed.');
+        if (!cardPanelRef.current || !cardClientSecret) {
+          setSubmitError('Card payment form not ready. Please wait a moment and try again.');
           setSubmitting(false);
           return;
         }
 
-        // Submit order
+        // stripe.confirmPayment() via PaymentElement (inside CardPaymentPanel)
+        const payResult = await cardPanelRef.current.confirmCardPayment({
+          name: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          phone: data.phone,
+        });
+
+        if ('error' in payResult) {
+          setCardError(payResult.error);
+          setSubmitting(false);
+          return;
+        }
+
+        // Payment succeeded — now create the order server-side
         const result = await submitOrder({
           ...basePayload,
-          payment: { method: 'card', payment_intent_id: paymentIntent!.id },
+          payment: { method: 'card', payment_intent_id: payResult.paymentIntentId },
         });
         orderNum = result.order_number;
       } else {
@@ -975,17 +1076,25 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                       exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                       <div className="rounded-[14px] border border-[#243e62] bg-[#080f1c] p-5 space-y-4">
                         <div>
-                          <Label htmlFor="card-element" required>Card Details</Label>
-                          <div id="card-element" className="rounded-[10px] border border-[#243e62] bg-[#0d1b2e] px-3.5 py-3">
-                            <CardElement options={{
-                              style: {
-                                base: { color: '#e0eaff', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', '::placeholder': { color: '#4d6a8e' } },
-                                invalid: { color: '#f4a8a8' },
-                              },
-                              hidePostalCode: false,
-                            }} />
-                          </div>
-                          {cardError && <FieldError msg={cardError} />}
+                          <Label htmlFor="payment-element" required>Card Details</Label>
+                          {cardPICreating ? (
+                            <div className="flex items-center justify-center rounded-[10px] border border-[#243e62] bg-[#0d1b2e] py-6 text-sm text-[#5a7999]">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Initializing secure payment…
+                            </div>
+                          ) : cardClientSecret && stripePromise ? (
+                            <div id="payment-element">
+                              <CardPaymentPanel
+                                ref={cardPanelRef}
+                                stripePromise={stripePromise}
+                                clientSecret={cardClientSecret}
+                                cardError={cardError}
+                              />
+                            </div>
+                          ) : !cardPICreating && cardError ? (
+                            <div className="rounded-[10px] border border-[#a04040]/40 bg-[#2a0f0f]/30 px-4 py-3 text-sm text-[#f4a8a8]">
+                              {cardError}
+                            </div>
+                          ) : null}
                         </div>
                         <div className="rounded-[10px] border border-[#f4a8a8]/20 bg-[#2a0f0f]/30 px-4 py-3 text-[11px] text-[#f4a8a8]">
                           A <strong>5% processing fee</strong> will be added at checkout. Your card will be charged immediately.
@@ -1142,8 +1251,11 @@ export default function CheckoutPage({ cart, onBack, onSuccess }: {
   }, [settings?.stripe_publishable_key]);
 
   return (
-    <Elements stripe={stripePromise}>
-      <InnerCheckoutForm cart={cart} onBack={onBack} settings={settings} />
-    </Elements>
+    <InnerCheckoutForm
+      cart={cart}
+      onBack={onBack}
+      settings={settings}
+      stripePromise={stripePromise}
+    />
   );
 }

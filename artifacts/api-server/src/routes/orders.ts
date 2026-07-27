@@ -29,7 +29,11 @@ ordersRouter.post(
   "/orders/payment-intent",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { amount_cents } = req.body as { amount_cents: number };
+      const { amount_cents, email, name } = req.body as {
+        amount_cents: number;
+        email?: string;
+        name?: string;
+      };
 
       if (!amount_cents || amount_cents < 50) {
         res.status(400).json({ error: "Invalid amount." });
@@ -37,15 +41,29 @@ ordersRouter.post(
       }
 
       const stripe = getStripeClient();
+
+      // Create a Stripe Customer so the customer ID is saved against the PaymentIntent
+      let customerId: string | undefined;
+      if (email) {
+        const customer = await stripe.customers.create({
+          email,
+          name: name ?? undefined,
+        });
+        customerId = customer.id;
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount_cents),
         currency: "usd",
         automatic_payment_methods: { enabled: true },
+        ...(customerId ? { customer: customerId } : {}),
+        ...(email ? { receipt_email: email } : {}),
       });
 
       res.json({
         client_secret: paymentIntent.client_secret,
         payment_intent_id: paymentIntent.id,
+        customer_id: customerId ?? null,
       });
     } catch (err) {
       next(err);
@@ -153,13 +171,20 @@ ordersRouter.post(
       }
 
       // ── Verify Stripe payment for card ──
+      let stripeChargeId: string | null = null;
+      let stripeCustomerId: string | null = null;
+
       if (payment.method === "card") {
         if (!payment.payment_intent_id) {
           res.status(400).json({ error: "Payment intent ID is required for card payments." });
           return;
         }
         const stripe = getStripeClient();
-        const pi = await stripe.paymentIntents.retrieve(payment.payment_intent_id);
+
+        // Expand latest_charge so we can capture the Charge ID in one round-trip
+        const pi = await stripe.paymentIntents.retrieve(payment.payment_intent_id, {
+          expand: ["latest_charge"],
+        });
 
         if (pi.status !== "succeeded") {
           res.status(402).json({ error: `Payment not completed. Status: ${pi.status}` });
@@ -172,6 +197,16 @@ ordersRouter.post(
           res.status(402).json({ error: "Payment amount mismatch." });
           return;
         }
+
+        // Extract Charge ID from the expanded object
+        const latestCharge = pi.latest_charge as { id?: string } | null;
+        stripeChargeId = latestCharge?.id ?? null;
+
+        // Extract Customer ID
+        stripeCustomerId =
+          typeof pi.customer === "string"
+            ? pi.customer
+            : (pi.customer as { id?: string } | null)?.id ?? null;
       }
 
       // ── Require screenshot for Zelle ──
@@ -290,9 +325,22 @@ ordersRouter.post(
         status: payment.method === "card" ? "succeeded" : "pending",
         amount_cents: totalCents,
         stripe_payment_intent_id: payment.payment_intent_id ?? null,
+        stripe_charge_id: stripeChargeId,
+        stripe_customer_id: stripeCustomerId,
         stripe_status: payment.method === "card" ? "succeeded" : null,
         zelle_screenshot_url: zelleScreenshotUrl ?? null,
       });
+
+      // ── Save Stripe Customer ID to customer record (best-effort) ──
+      if (stripeCustomerId) {
+        await supabase
+          .from("customers")
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq("id", customerRecord.id)
+          .then(({ error }) => {
+            if (error) logger.warn({ err: error }, "Failed to save stripe_customer_id to customer");
+          });
+      }
 
       if (payErr) {
         logger.error({ err: payErr }, "Failed to insert payment record");

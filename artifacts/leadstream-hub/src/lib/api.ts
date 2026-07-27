@@ -29,14 +29,18 @@ export function fetchSettings(): Promise<AppSettings> {
   return request<AppSettings>("/settings");
 }
 
-export function createPaymentIntent(amountCents: number): Promise<{
+export function createPaymentIntent(
+  amountCents: number,
+  opts?: { email?: string; name?: string }
+): Promise<{
   client_secret: string;
   payment_intent_id: string;
+  customer_id: string | null;
 }> {
   return request("/orders/payment-intent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount_cents: amountCents }),
+    body: JSON.stringify({ amount_cents: amountCents, ...opts }),
   });
 }
 

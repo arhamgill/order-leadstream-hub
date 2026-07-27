@@ -1,7 +1,7 @@
 import { ReplitConnectors } from "@replit/connectors-sdk";
 
 interface EmailPayload {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
 }
@@ -10,7 +10,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   const fromEmail = process.env["FROM_EMAIL"] ?? "orders@leadstreamhub.com";
   const body = JSON.stringify({
     from: `LeadStream Hub <${fromEmail}>`,
-    to: [payload.to],
+    to: Array.isArray(payload.to) ? payload.to : [payload.to],
     subject: payload.subject,
     html: payload.html,
   });
@@ -196,8 +196,16 @@ export function buildCustomerEmail(data: OrderEmailData): EmailPayload {
 
 // ─── Admin Notification Email ─────────────────────────────────
 
+// ADMIN_EMAIL supports multiple recipients as a comma-separated list, e.g.
+// "rohail331@gmail.com,zackbrandon503@gmail.com" — every order notification
+// goes to all of them.
+function getAdminEmails(): string[] {
+  const raw = process.env["ADMIN_EMAIL"] ?? "admin@leadstreamhub.com";
+  return raw.split(",").map((e) => e.trim()).filter(Boolean);
+}
+
 export function buildAdminEmail(data: OrderEmailData): EmailPayload {
-  const adminEmail = process.env["ADMIN_EMAIL"] ?? "admin@leadstreamhub.com";
+  const adminEmail = getAdminEmails();
 
   const ds = data.defaultSettings as Record<string, unknown>;
   const pa = data.productAnswers as Record<string, Record<string, unknown>>;

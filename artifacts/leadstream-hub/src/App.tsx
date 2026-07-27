@@ -254,17 +254,15 @@ function ProductCard({
       className="glass-panel group rounded-[22px] p-5 transition-colors duration-300 hover:border-[#3c6c9d] sm:p-6"
       data-testid={`card-product-${product.id}`}
     >
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3.5">
+      {/* Row 1: icon + title on the left, badges on the right */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-[#32567f] bg-[#162e50] font-display text-[11px] font-bold tracking-wide text-[#67d8f0]">
             {typeIcon}
           </div>
-          <div>
-            <h3 className="font-display text-[17px] font-semibold tracking-[-0.025em] text-white">{product.type}</h3>
-            <p className="mt-1.5 max-w-[34rem] text-xs leading-5 text-[#91a7c8]">{product.description}</p>
-          </div>
+          <h3 className="font-display text-[17px] font-semibold tracking-[-0.025em] text-white">{product.type}</h3>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {product.buffer && (
             <span className="hidden items-center gap-1 rounded-full border border-[#365378] bg-[#132843] px-2.5 py-1 text-[10px] font-semibold text-[#9fcaeb] sm:flex">
               <Clock3 className="h-3 w-3 text-[#68d8ee]" /> {product.buffer}
@@ -278,6 +276,9 @@ function ProductCard({
           )}
         </div>
       </div>
+
+      {/* Row 2: description — spans the full card width, under everything above */}
+      <p className="mb-5 mt-2.5 text-xs leading-5 text-[#91a7c8]">{product.description}</p>
       {product.buffer && (
         <div className="mb-4 flex w-fit items-center gap-1.5 rounded-full border border-[#365378] bg-[#132843] px-2.5 py-1 text-[10px] font-semibold text-[#9fcaeb] sm:hidden">
           <Clock3 className="h-3 w-3 text-[#68d8ee]" /> {product.buffer}

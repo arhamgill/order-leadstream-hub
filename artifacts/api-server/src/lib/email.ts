@@ -8,26 +8,45 @@ interface EmailPayload {
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   const fromEmail = process.env["FROM_EMAIL"] ?? "orders@leadstreamhub.com";
+  const body = JSON.stringify({
+    from: `LeadStream Hub <${fromEmail}>`,
+    to: [payload.to],
+    subject: payload.subject,
+    html: payload.html,
+  });
 
   try {
-    const connectors = new ReplitConnectors();
-    const response = await connectors.proxy("resend", "/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `LeadStream Hub <${fromEmail}>`,
-        to: [payload.to],
-        subject: payload.subject,
-        html: payload.html,
-      }),
-    });
+    const resendApiKey = process.env["RESEND_API_KEY"];
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Resend API error ${response.status}: ${text}`);
+    if (resendApiKey) {
+      // Production path (Render, or anywhere non-Replit): call Resend directly.
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${resendApiKey}`,
+        },
+        body,
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Resend API error ${response.status}: ${text}`);
+      }
+    } else {
+      // Replit path: route through the Replit Resend connector proxy.
+      const connectors = new ReplitConnectors();
+      const response = await connectors.proxy("resend", "/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Resend API error ${response.status}: ${text}`);
+      }
     }
   } catch (err) {
-    // Log but don't throw — email failure shouldn't fail the whole order
+    // Log but don't throw — email failure shouldn't fail the whole order.
     console.error("Failed to send email:", err);
   }
 }

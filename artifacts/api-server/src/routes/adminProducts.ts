@@ -28,6 +28,7 @@ adminProductsRouter.put("/admin/products/:id", async (req: Request, res: Respons
     const body = req.body as {
       category?: string; type?: string; description?: string;
       buffer?: string | null; active?: boolean; sort_order?: number;
+      stock_remaining?: number | null;
       packages?: Array<{ quantity: number; price_dollars: number; savings_dollars?: number | null; savings_label?: string | null }>;
     };
 
@@ -38,6 +39,7 @@ adminProductsRouter.put("/admin/products/:id", async (req: Request, res: Respons
     if (body.buffer !== undefined) updateData.buffer = body.buffer;
     if (body.active !== undefined) updateData.active = body.active;
     if (body.sort_order !== undefined) updateData.sort_order = body.sort_order;
+    if (body.stock_remaining !== undefined) updateData.stock_remaining = body.stock_remaining;
     if (body.packages !== undefined) updateData.packages = body.packages;
 
     const { data, error } = await supabase

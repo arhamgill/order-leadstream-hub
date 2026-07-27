@@ -13,6 +13,8 @@ export type Product = {
   type: ProductType;
   description: string;
   buffer?: string;
+  /** Limited-stock counter set by admin. null/undefined = unlimited (no badge). */
+  stockRemaining?: number | null;
   packages: Package[];
 };
 

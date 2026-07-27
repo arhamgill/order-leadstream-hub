@@ -19,6 +19,7 @@ catalogRouter.get("/catalog", async (_req: Request, res: Response, next: NextFun
     type DbProduct = {
       id: string; category: string; type: string; description: string;
       buffer: string | null; active: boolean; sort_order: number;
+      stock_remaining: number | null;
       packages: Array<{ quantity: number; price_dollars: number; savings_dollars?: number | null; savings_label?: string | null }>;
     };
 
@@ -30,6 +31,7 @@ catalogRouter.get("/catalog", async (_req: Request, res: Response, next: NextFun
       buffer: p.buffer ?? undefined,
       active: p.active,
       sort_order: p.sort_order,
+      stock_remaining: p.stock_remaining ?? null,
       packages: p.packages.map((pkg) => ({
         quantity: pkg.quantity,
         price: pkg.price_dollars,

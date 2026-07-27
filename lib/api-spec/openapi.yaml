@@ -495,6 +495,7 @@ components:
         buffer: { type: ["string", "null"] }
         active: { type: boolean }
         sort_order: { type: integer }
+        stock_remaining: { type: ["integer", "null"] }
         packages:
           type: array
           items:
@@ -764,6 +765,7 @@ components:
         buffer: { type: ["string", "null"] }
         active: { type: boolean }
         sort_order: { type: integer }
+        stock_remaining: { type: ["integer", "null"] }
         packages:
           type: array
           items:
@@ -778,6 +780,7 @@ components:
         buffer: { type: ["string", "null"] }
         active: { type: boolean }
         sort_order: { type: integer }
+        stock_remaining: { type: ["integer", "null"] }
         packages:
           type: array
           items:

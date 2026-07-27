@@ -18,6 +18,9 @@ function ProductEditor({ product }: { product: AdminProduct }) {
   const [description, setDescription] = useState(product.description || "");
   const [buffer, setBuffer] = useState(product.buffer || "");
   const [active, setActive] = useState(product.active);
+  const [stockRemaining, setStockRemaining] = useState(
+    product.stock_remaining == null ? "" : String(product.stock_remaining)
+  );
   const [packages, setPackages] = useState(product.packages.map(p => ({ ...p, id: Math.random().toString() })));
 
   const handleSave = () => {
@@ -35,6 +38,8 @@ function ProductEditor({ product }: { product: AdminProduct }) {
         description,
         buffer,
         active,
+        // Empty = unlimited (no badge). A number shows "Only N left" on the storefront.
+        stock_remaining: stockRemaining.trim() === "" ? null : Number(stockRemaining),
         packages: cleanPackages
       }
     }, {
@@ -68,12 +73,26 @@ function ProductEditor({ product }: { product: AdminProduct }) {
           </div>
           <div className="space-y-2">
             <Label>Buffer Info (e.g. "We send 10% extra")</Label>
-            <Textarea 
-              value={buffer} 
-              onChange={e => setBuffer(e.target.value)} 
+            <Textarea
+              value={buffer}
+              onChange={e => setBuffer(e.target.value)}
               className="h-20 resize-none"
             />
           </div>
+        </div>
+
+        <div className="space-y-2 max-w-xs">
+          <Label>Limited Stock — Units Left</Label>
+          <Input
+            type="number"
+            min={0}
+            value={stockRemaining}
+            placeholder="Leave empty for unlimited"
+            onChange={e => setStockRemaining(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Shows an "Only N left" badge on the storefront. Leave empty for no limit.
+          </p>
         </div>
 
         <div className="space-y-3 pt-4 border-t">

@@ -374,6 +374,8 @@ ordersRouter.post(
       };
 
       // ── Send emails (non-blocking) ──
+      // One to the customer (order confirmation) and one to the admin (new-order
+      // notification). Both fire-and-forget so email issues never fail the order.
       sendEmail(buildCustomerEmail(emailData)).catch((e) =>
         logger.error({ err: e }, "Customer email failed")
       );

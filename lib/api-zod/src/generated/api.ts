@@ -28,6 +28,7 @@ export const GetCatalogResponseItem = zod.object({
   "buffer": zod.string().nullish(),
   "active": zod.boolean(),
   "sort_order": zod.number(),
+  "stock_remaining": zod.number().nullish(),
   "packages": zod.array(zod.object({
   "quantity": zod.number(),
   "price": zod.number(),
@@ -353,6 +354,7 @@ export const ListAdminProductsResponseItem = zod.object({
   "buffer": zod.string().nullish(),
   "active": zod.boolean(),
   "sort_order": zod.number(),
+  "stock_remaining": zod.number().nullish(),
   "packages": zod.array(zod.object({
   "quantity": zod.number(),
   "price_dollars": zod.number(),
@@ -377,6 +379,7 @@ export const UpdateAdminProductBody = zod.object({
   "buffer": zod.string().nullish(),
   "active": zod.boolean().optional(),
   "sort_order": zod.number().optional(),
+  "stock_remaining": zod.number().nullish(),
   "packages": zod.array(zod.object({
   "quantity": zod.number(),
   "price_dollars": zod.number(),
@@ -393,6 +396,7 @@ export const UpdateAdminProductResponse = zod.object({
   "buffer": zod.string().nullish(),
   "active": zod.boolean(),
   "sort_order": zod.number(),
+  "stock_remaining": zod.number().nullish(),
   "packages": zod.array(zod.object({
   "quantity": zod.number(),
   "price_dollars": zod.number(),

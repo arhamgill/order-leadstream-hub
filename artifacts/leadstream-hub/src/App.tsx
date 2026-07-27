@@ -10,7 +10,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CheckoutPage from './pages/Checkout';
 import type { CartItem, Category, Package, Product, ProductType } from './types';
 
@@ -95,14 +95,11 @@ const categoryMeta: Record<Category, { eyebrow: string; description: string }> =
 
 function BrandMark() {
   return (
-    <span
-      className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] bg-[#2d7df4] shadow-[0_0_24px_rgba(45,125,244,.38)]"
-      aria-hidden="true"
-    >
-      <span className="absolute -right-1 -top-2 h-6 w-6 rounded-full bg-[#69e4f5]" />
-      <span className="absolute bottom-0 left-1 h-4 w-4 -rotate-45 rounded-[4px] bg-[#0b1830]" />
-      <span className="relative z-10 h-2 w-2 rounded-full bg-white" />
-    </span>
+    <img
+      src="/logo.png"
+      alt="LeadStream Hub"
+      className="h-12 w-auto object-contain"
+    />
   );
 }
 
@@ -111,29 +108,34 @@ function Header({ itemCount, onCart }: { itemCount: number; onCart: () => void }
     <header className="mx-auto flex w-full max-w-[1320px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
       <div className="flex items-center gap-3">
         <BrandMark />
-        <div className="leading-none">
-          <div className="font-display text-[15px] font-semibold tracking-[-0.02em] text-white">leadstream</div>
-          <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.22em] text-[#65d8f0]">hub order portal</div>
-        </div>
       </div>
       <div className="flex items-center gap-3">
         <div className="hidden items-center gap-2 text-xs text-[#8ea2c1] sm:flex">
           <ShieldCheck className="h-4 w-4 text-[#62d8ef]" />
           Exclusive leads. Direct access.
         </div>
-        <button
+        <motion.button
           type="button"
           onClick={onCart}
           data-testid="button-header-cart"
-          className="focus-ring relative flex h-11 items-center gap-2 rounded-full border border-[#2c466b] bg-[#12223b] px-4 text-sm font-semibold text-white transition hover:border-[#4f83c7] hover:bg-[#172d4d]"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+          className="focus-ring relative flex h-11 items-center gap-2 rounded-full border border-[#2c466b] bg-[#12223b] px-4 text-sm font-semibold text-white transition-colors hover:border-[#4f83c7] hover:bg-[#172d4d]"
           aria-label={`Open cart with ${itemCount} products`}
         >
           <ShoppingBag className="h-4 w-4 text-[#6cddf3]" />
           <span className="hidden sm:inline">Your cart</span>
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3182f4] px-1.5 text-[11px]">
+          <motion.span
+            key={itemCount}
+            initial={{ scale: 0.5, opacity: 0.4 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 600, damping: 18 }}
+            className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3182f4] px-1.5 text-[11px]"
+          >
             {itemCount}
-          </span>
-        </button>
+          </motion.span>
+        </motion.button>
       </div>
     </header>
   );
@@ -146,28 +148,38 @@ function CategorySelector({ selected, onSelect }: { selected: Category; onSelect
       role="tablist"
       aria-label="Insurance product categories"
     >
-      {(['Final Expense', 'Medicare', 'ACA'] as Category[]).map((category) => (
-        <button
-          key={category}
-          type="button"
-          role="tab"
-          aria-selected={selected === category}
-          onClick={() => onSelect(category)}
-          data-testid={`button-category-${category.toLowerCase().replaceAll(' ', '-')}`}
-          className={`focus-ring relative rounded-[13px] px-2 py-3 text-xs font-semibold transition sm:px-4 sm:py-3.5 sm:text-sm ${
-            selected === category
-              ? 'bg-[#277bf0] text-white shadow-[0_8px_22px_rgba(39,123,240,.28)]'
-              : 'text-[#8ea3c3] hover:bg-[#172a47] hover:text-white'
-          }`}
-        >
-          {category}
-          {category === 'ACA' && (
-            <span className="ml-1.5 hidden rounded-full bg-[#1c3657] px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-[#7eddf0] sm:inline">
-              Soon
+      {(['Final Expense', 'Medicare', 'ACA'] as Category[]).map((category) => {
+        const isActive = selected === category;
+        return (
+          <button
+            key={category}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelect(category)}
+            data-testid={`button-category-${category.toLowerCase().replaceAll(' ', '-')}`}
+            className={`focus-ring relative rounded-[13px] px-2 py-3 text-xs font-semibold transition-colors sm:px-4 sm:py-3.5 sm:text-sm ${
+              isActive ? 'text-white' : 'text-[#8ea3c3] hover:text-white'
+            }`}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="activeCategoryPill"
+                className="absolute inset-0 rounded-[13px] bg-[#277bf0] shadow-[0_8px_22px_rgba(39,123,240,.28)]"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              />
+            )}
+            <span className="relative z-10">
+              {category}
+              {category === 'ACA' && (
+                <span className="ml-1.5 hidden rounded-full bg-[#1c3657] px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-[#7eddf0] sm:inline">
+                  Soon
+                </span>
+              )}
             </span>
-          )}
-        </button>
-      ))}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -198,14 +210,17 @@ function PackageRow({
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <span className="font-display text-sm font-semibold text-[#dce8f7]">{money(pack.price)}</span>
-        <button
+        <motion.button
           type="button"
           onClick={() => onAdd(product, pack)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.88 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
           data-testid={`button-add-${product.category.toLowerCase().replaceAll(' ', '-')}-${product.type.toLowerCase().replaceAll(' ', '-')}-${pack.quantity}`}
-          className="focus-ring flex h-9 items-center gap-1.5 rounded-[9px] border border-[#38669b] bg-[#18365d] px-3 text-xs font-semibold text-[#d8eaff] transition hover:border-[#70d4f4] hover:bg-[#20518a] active:scale-[.98]"
+          className="focus-ring flex h-9 items-center gap-1.5 rounded-[9px] border border-[#38669b] bg-[#18365d] px-3 text-xs font-semibold text-[#d8eaff] transition-colors hover:border-[#70d4f4] hover:bg-[#20518a]"
         >
           <Plus className="h-3.5 w-3.5" /> Add
-        </button>
+        </motion.button>
       </div>
     </div>
   );
@@ -224,10 +239,12 @@ function ProductCard({
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.38, delay: index * 0.07 }}
-      className="glass-panel group rounded-[22px] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-[#3c6c9d] sm:p-6"
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -6, transition: { type: 'spring', stiffness: 300, damping: 20 } }}
+      className="glass-panel group rounded-[22px] p-5 transition-colors duration-300 hover:border-[#3c6c9d] sm:p-6"
       data-testid={`card-product-${product.id}`}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
@@ -240,11 +257,19 @@ function ProductCard({
             <p className="mt-1.5 max-w-[34rem] text-xs leading-5 text-[#91a7c8]">{product.description}</p>
           </div>
         </div>
-        {product.buffer && (
-          <span className="hidden shrink-0 items-center gap-1 rounded-full border border-[#365378] bg-[#132843] px-2.5 py-1 text-[10px] font-semibold text-[#9fcaeb] sm:flex">
-            <Clock3 className="h-3 w-3 text-[#68d8ee]" /> {product.buffer}
-          </span>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          {product.buffer && (
+            <span className="hidden items-center gap-1 rounded-full border border-[#365378] bg-[#132843] px-2.5 py-1 text-[10px] font-semibold text-[#9fcaeb] sm:flex">
+              <Clock3 className="h-3 w-3 text-[#68d8ee]" /> {product.buffer}
+            </span>
+          )}
+          {typeof product.stockRemaining === 'number' && (
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#f0a63a]/40 bg-[#f0a63a]/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#f7bb57]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#f7bb57]" />
+              {product.stockRemaining > 0 ? `Only ${product.stockRemaining} left` : 'Sold out'}
+            </span>
+          )}
+        </div>
       </div>
       {product.buffer && (
         <div className="mb-4 flex w-fit items-center gap-1.5 rounded-full border border-[#365378] bg-[#132843] px-2.5 py-1 text-[10px] font-semibold text-[#9fcaeb] sm:hidden">
@@ -417,15 +442,18 @@ function CartPanel({
                 </span>
               </div>
             </div>
-            <button
+            <motion.button
               type="button"
               onClick={onCheckout}
               data-testid="button-proceed-checkout"
               disabled={cart.length === 0}
-              className="blue-button focus-ring mt-5 flex w-full items-center justify-center gap-2 rounded-[11px] py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              whileHover={cart.length === 0 ? undefined : { y: -2 }}
+              whileTap={cart.length === 0 ? undefined : { scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+              className="blue-button focus-ring mt-5 flex w-full items-center justify-center gap-2 rounded-[11px] py-3.5 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Proceed To Checkout <ArrowRight className="h-4 w-4" />
-            </button>
+            </motion.button>
             <p className="mt-3 text-center text-[10px] leading-4 text-[#7389a8]">
               No payment required in this preview. Your order is handed off to the LeadStream team.
             </p>
@@ -445,9 +473,29 @@ function Home() {
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
 
+  // Live stock counts (admin-controlled) fetched from the catalog API, keyed by
+  // product id. Merged onto the static product data below.
+  const [stockById, setStockById] = useState<Record<string, number | null>>({});
+  useEffect(() => {
+    fetch('/api/catalog')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: Array<{ id: string; stock_remaining: number | null }>) => {
+        const map: Record<string, number | null> = {};
+        for (const row of rows) map[row.id] = row.stock_remaining ?? null;
+        setStockById(map);
+      })
+      .catch(() => {});
+  }, []);
+
   const products = useMemo(
-    () => (selectedCategory === 'ACA' ? [] : productsByCategory[selectedCategory]),
-    [selectedCategory],
+    () =>
+      selectedCategory === 'ACA'
+        ? []
+        : productsByCategory[selectedCategory].map((p) => ({
+            ...p,
+            stockRemaining: p.id in stockById ? stockById[p.id] : undefined,
+          })),
+    [selectedCategory, stockById],
   );
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -625,13 +673,12 @@ function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#1a2e4a] bg-[#050b14]">
+      <footer className="border-t border-white/10 bg-[#0a1c40]/40 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-[1320px] px-5 py-10 sm:px-8 lg:px-10">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
             {/* Brand */}
-            <div className="flex flex-col items-center gap-1 sm:items-start">
-              <span className="font-display text-[15px] font-semibold tracking-[-0.02em] text-white">leadstream<span className="text-[#4a9eff]">hub</span></span>
-              <span className="text-[11px] text-[#4d6a8e]">Exclusive insurance leads, on your terms.</span>
+            <div className="flex items-center">
+              <img src="/logo.png" alt="LeadStream Hub" className="h-12 w-auto object-contain" />
             </div>
 
             {/* Contact info */}
@@ -660,7 +707,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="mt-8 border-t border-[#1a2e4a] pt-6 text-center text-[11px] text-[#3a526e]">
+          <div className="mt-8 border-t border-white/10 pt-6 text-center text-[11px] text-[#8ba6cc]">
             © {new Date().getFullYear()} LeadStream Hub. All rights reserved.
           </div>
         </div>
@@ -668,10 +715,12 @@ function Home() {
 
       {/* Mobile cart bar */}
       <div className="fixed bottom-4 left-4 right-4 z-30 lg:hidden">
-        <button
+        <motion.button
           type="button"
           onClick={() => setMobileCartOpen(true)}
           data-testid="button-mobile-cart"
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 24 }}
           className="blue-button focus-ring flex w-full items-center justify-between rounded-[14px] px-4 py-3.5 text-left text-white shadow-[0_12px_35px_rgba(0,0,0,.4)]"
         >
           <span className="flex items-center gap-2.5">
@@ -683,7 +732,7 @@ function Home() {
           <span className="flex items-center gap-1 text-sm font-bold">
             {itemCount ? money(subtotal) : 'View'} <ArrowRight className="h-4 w-4" />
           </span>
-        </button>
+        </motion.button>
       </div>
 
       {/* Mobile cart sheet */}

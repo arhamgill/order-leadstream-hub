@@ -15,5 +15,7 @@ export interface ProductUpdate {
   buffer?: string | null;
   active?: boolean;
   sort_order?: number;
+  /** @nullable */
+  stock_remaining?: number | null;
   packages?: AdminPackage[];
 }

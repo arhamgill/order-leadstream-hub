@@ -1,0 +1,45 @@
+# Render Blueprint — one web service that runs the whole app.
+# Deploy by pushing this repo and creating a Blueprint in Render, OR just copy
+# the Build/Start commands below into a manually-created Web Service.
+#
+# Render provides PORT automatically; the server reads process.env.PORT.
+services:
+  - type: web
+    name: leadstream-hub
+    runtime: node
+    plan: starter            # bump to standard/pro as traffic grows
+    region: oregon           # pick the region closest to you
+    branch: main
+    buildCommand: corepack enable && corepack prepare pnpm@latest --activate && pnpm install --no-frozen-lockfile && pnpm run build:prod
+    startCommand: pnpm start
+    healthCheckPath: /api/healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      # ---- Secrets: set these in the Render dashboard (sync:false = manual) ----
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ZELLE_NAME
+        sync: false
+      - key: ZELLE_PHONE
+        sync: false
+      # ---- Optional / add later ----
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: RESEND_API_KEY   # set this to enable order emails on Render
+        sync: false

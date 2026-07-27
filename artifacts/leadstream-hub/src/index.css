@@ -40,7 +40,7 @@
 }
 
 :root {
-  --background: 222 47% 7%;
+  --background: 221 54% 13%;
   --foreground: 210 40% 96%;
   --border: 218 32% 19%;
   --card: 222 42% 10%;
@@ -74,7 +74,7 @@
 }
 
 .dark {
-  --background: 222 47% 7%;
+  --background: 221 54% 13%;
   --foreground: 210 40% 96%;
   --border: 218 32% 19%;
   --card: 222 42% 10%;
@@ -103,7 +103,7 @@
   }
 
   html {
-    background: #080e19;
+    background: #0a1836;
     scroll-behavior: smooth;
   }
 
@@ -132,10 +132,10 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 77% 2%, rgba(42, 126, 255, 0.16), transparent 27rem),
-    radial-gradient(circle at 6% 40%, rgba(0, 189, 219, 0.06), transparent 25rem),
-    #080e19;
+  /* Smooth diagonal gradient: deep navy (top-left) → royal blue (bottom-right),
+     matching info.leadstreamhub.com. No vignette/arc. */
+  background: linear-gradient(135deg, #0a1a3e 0%, #13306e 50%, #1c3f8a 100%);
+  background-attachment: fixed;
 }
 
 .portal-shell::before {

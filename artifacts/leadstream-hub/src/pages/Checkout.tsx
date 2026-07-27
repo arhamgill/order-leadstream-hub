@@ -701,7 +701,27 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-          <form onSubmit={handleSubmit(onFormValid)} noValidate data-testid="form-checkout" className="space-y-5">
+          <form
+            onSubmit={handleSubmit(onFormValid, (fieldErrors) => {
+              // RHF field validation failed — surface errors near the Submit button and scroll to first one
+              const rhfMessages: Record<string, string> = {};
+              Object.entries(fieldErrors).forEach(([k, v]) => {
+                const msg = (v as { message?: string })?.message;
+                if (msg) rhfMessages[k] = msg;
+              });
+              setExtraErrors(prev => ({ ...prev, ...rhfMessages }));
+              const firstKey = Object.keys(fieldErrors)[0];
+              const el =
+                document.querySelector<HTMLElement>(`[name="${firstKey}"]`) ??
+                document.getElementById(firstKey);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.focus();
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            })}
+            noValidate data-testid="form-checkout" className="space-y-5">
 
             {/* ── Customer Info ── */}
             <CustomerCard>
@@ -762,11 +782,11 @@ function InnerCheckoutForm({ cart, onBack, settings }: {
                 <FieldError msg={extraErrors.default_availDays} />
               </div>
               <div>
-                <Label htmlFor="default_agencyMention" required>Agency Name to Mention to Prospects</Label>
+                <Label htmlFor="default_agencyMention">Agency Name to Mention to Prospects <span className="text-[#5a7999] font-normal">(optional)</span></Label>
                 <input id="default_agencyMention" data-testid="input-default-agency-mention"
                   placeholder="The name your agents use when calling prospects"
-                  className={errors.default_agencyMention ? errorInputClass : inputClass}
-                  {...register('default_agencyMention', { required: 'Agency name to mention is required.' })} />
+                  className={inputClass}
+                  {...register('default_agencyMention')} />
                 <FieldError msg={errors.default_agencyMention?.message} />
               </div>
             </DefaultSettingsCard>

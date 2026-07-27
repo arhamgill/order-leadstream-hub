@@ -495,7 +495,7 @@ function Home() {
       <CheckoutPage
         cart={cart}
         onBack={backFromCheckout}
-        onSuccess={() => {/* stay on success state inside CheckoutPage */}}
+        onSuccess={() => { setCart([]); }}
       />
     );
   }

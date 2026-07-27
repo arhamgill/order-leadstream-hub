@@ -1,0 +1,1 @@
+- [LeadStream Hub Architecture](leadstream-hub-architecture.md) — routing, Stripe/Resend wiring, Supabase schema, payment flow decisions

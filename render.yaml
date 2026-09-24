@@ -10,7 +10,7 @@ services:
     plan: starter            # bump to standard/pro as traffic grows
     region: oregon           # pick the region closest to you
     branch: main
-    buildCommand: corepack enable && corepack prepare pnpm@latest --activate && pnpm install --no-frozen-lockfile && pnpm run build:prod
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build:prod
     startCommand: pnpm start
     healthCheckPath: /api/healthz
     autoDeploy: true

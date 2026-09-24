@@ -1060,11 +1060,11 @@ function InnerCheckoutForm({ cart, onBack, settings, stripePromise }: {
               <div className="p-6 sm:p-7 space-y-4">
                 {/* Selector */}
                 <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setPaymentMethod('card')}
-                    className={`flex flex-col items-center gap-2 rounded-[14px] border p-4 text-center transition ${paymentMethod === 'card' ? 'border-[#3e7dda] bg-[#0f2044]' : 'border-[#243e62] bg-[#0d1b2e] hover:bg-[#121f36]'}`}>
-                    <CreditCard className="h-5 w-5 text-[#62d8f0]" />
-                    <div className="text-sm font-semibold text-white">Credit / Debit Card</div>
-                    <div className="text-[10px] text-[#f4a8a8]">+5% processing fee</div>
+                  <button type="button" disabled title="Credit / Debit Card is not available right now"
+                    className="flex cursor-not-allowed flex-col items-center gap-2 rounded-[14px] border border-[#243e62] bg-[#0d1b2e]/50 p-4 text-center opacity-50">
+                    <CreditCard className="h-5 w-5 text-[#5a7999]" />
+                    <div className="text-sm font-semibold text-[#7a95ba]">Credit / Debit Card</div>
+                    <div className="text-[10px] text-[#f4a8a8]">Not available right now</div>
                   </button>
                   <button type="button" onClick={() => setPaymentMethod('zelle')}
                     className={`flex flex-col items-center gap-2 rounded-[14px] border p-4 text-center transition ${paymentMethod === 'zelle' ? 'border-[#3e7dda] bg-[#0f2044]' : 'border-[#243e62] bg-[#0d1b2e] hover:bg-[#121f36]'}`}>
